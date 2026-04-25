@@ -24,14 +24,14 @@ def main():
 @main.command()
 @click.argument("name")
 def start(name: str):
-    """Create a new feature branch with an empty spec.md."""
+    """Create a new feature branch with an empty spec file at .textc/specs/<name>.md."""
     from textc.verbs.start import run
     _safe_run(run, name)
 
 
 @main.command()
 def compile():
-    """Read spec.md diff, dispatch agent, atomically commit on success."""
+    """Read the branch spec diff, dispatch agent, atomically commit on success."""
     from textc.verbs.compile import run
     _safe_run(run)
 
@@ -65,6 +65,16 @@ def show(index: int | None):
     """Show a specific session log (defaults to latest)."""
     from textc.verbs.show import run
     _safe_run(run, index)
+
+
+@main.command()
+@click.option("--port", type=int, default=None, help="Port to bind. Default: pick a free one.")
+@click.option("--no-browser", "no_browser", is_flag=True, default=False,
+              help="Do not auto-open the browser.")
+def view(port: int | None, no_browser: bool):
+    """Launch the browser-based textc viewer."""
+    from textc.verbs.view import run
+    _safe_run(run, port=port, open_browser=not no_browser)
 
 
 if __name__ == "__main__":

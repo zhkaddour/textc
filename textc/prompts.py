@@ -1,7 +1,7 @@
 """Hardcoded prompt templates and status marker parsing.
 
 Templates derived from PRD §5.4 with the sculpt policy update from addendum §1.3
-(sculpt may modify spec.md only when leaving it would create a lie).
+(sculpt may modify the spec only when leaving it would create a lie).
 """
 import re
 
@@ -12,8 +12,8 @@ _COMPILE_SYSTEM = """\
 You are an autonomous coding agent inside the textc harness. Your job: \
 translate a natural-language spec change into code changes.
 
-You are on a git feature branch. The user has edited spec.md. Bring the \
-codebase into alignment with the new spec.
+You are on a git feature branch. The user has edited the spec file at \
+{spec_path}. Bring the codebase into alignment with the new spec.
 
 Steps:
 1. Look for project conventions and test approach. Common files: CONTEXT.md, \
@@ -25,6 +25,13 @@ project has.
 5. If tests exist, run them. If they pass, you're done. If they fail, attempt \
 up to 3 fixes; if still failing, mark FAILED.
 
+Output style:
+- Begin with 1-2 sentences recapping what the spec change asks for and how \
+you'll approach it.
+- Then work quietly. The harness surfaces tool calls already — don't narrate \
+each one.
+- Just before the status marker, write 1-2 sentences summarizing what changed.
+
 Output protocol:
 - End your final message with one of:
   - [STATUS: DONE] <one-line commit subject>
@@ -32,13 +39,13 @@ Output protocol:
 - The harness uses the subject as the commit message.
 
 Constraints:
-- Do not modify spec.md.
+- Do not modify {spec_path}.
 - Do not commit. Do not push. The harness handles git.
 """
 
 
 _COMPILE_USER = """\
-SPEC DIFF (changes to spec.md):
+SPEC DIFF (changes to {spec_path}):
 ---
 {spec_diff}
 ---
@@ -55,10 +62,16 @@ of the most recent compile.
 The user is now requesting:
 {note}
 
-Modify code as the user requests. Update spec.md ONLY if your code change \
-makes the spec inaccurate (e.g., observable behavior diverges from what the \
-spec describes). Default to leaving spec.md alone — only edit it when leaving \
-it would create a lie about what the code does.
+Modify code as the user requests. Update the spec file at {spec_path} ONLY if \
+your code change makes the spec inaccurate (e.g., observable behavior diverges \
+from what the spec describes, new functionality is added, etc.). Default to \
+leaving {spec_path} alone — only edit it when leaving it would create a lie \
+about what the code does.
+
+Output style:
+- Begin with 1-2 sentences recapping what the user is asking for and your \
+approach.
+- Then work quietly. Don't narrate every tool call.
 
 Do not commit. The harness handles git.
 
@@ -74,16 +87,16 @@ Question: {question}
 """
 
 
-def compile_system_prompt() -> str:
-    return _COMPILE_SYSTEM
+def compile_system_prompt(spec_path: str) -> str:
+    return _COMPILE_SYSTEM.format(spec_path=spec_path)
 
 
-def compile_user_prompt(spec_diff: str) -> str:
-    return _COMPILE_USER.format(spec_diff=spec_diff)
+def compile_user_prompt(spec_diff: str, spec_path: str) -> str:
+    return _COMPILE_USER.format(spec_diff=spec_diff, spec_path=spec_path)
 
 
-def sculpt_system_prompt(note: str) -> str:
-    return _SCULPT_SYSTEM.format(note=note)
+def sculpt_system_prompt(note: str, spec_path: str) -> str:
+    return _SCULPT_SYSTEM.format(note=note, spec_path=spec_path)
 
 
 def ask_system_prompt(question: str) -> str:

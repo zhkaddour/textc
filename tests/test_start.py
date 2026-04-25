@@ -14,7 +14,7 @@ def test_start_creates_branch_with_empty_spec(git_repo: Path):
     ).stdout.strip()
     assert branch == "pendulum"
 
-    spec = Path("spec.md")
+    spec = Path(".textc/specs/pendulum.md")
     assert spec.exists()
     assert spec.read_text() == ""
 
@@ -58,7 +58,7 @@ def test_failed_compile_does_not_block_subsequent_compile(git_repo: Path, monkey
     FAKE = [sys.executable, str(Path(__file__).parent / "fixtures" / "fake_claude.py")]
 
     start_run("pendulum")
-    Path("spec.md").write_text("first attempt\n")
+    Path(".textc/specs/pendulum.md").write_text("first attempt\n")
     monkeypatch.setenv("TEXTC_TIMEOUT", "10")
 
     # First compile fails, leaving pendulum-1.failed.json
@@ -67,7 +67,7 @@ def test_failed_compile_does_not_block_subsequent_compile(git_repo: Path, monkey
     assert Path(".textc/sessions/pendulum-1.failed.json").exists()
 
     # Re-edit spec, retry — must NOT block on the lingering .failed.json
-    Path("spec.md").write_text("second attempt\n")
+    Path(".textc/specs/pendulum.md").write_text("second attempt\n")
     compile_run(claude_cmd_override=FAKE + ["--scenario", "done_simple"])
 
     subject = subprocess.run(

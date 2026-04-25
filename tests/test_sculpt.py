@@ -15,7 +15,7 @@ def _normal_compile_state(git_repo: Path):
     from textc.verbs.start import run as start_run
     from textc.verbs.compile import run as compile_run
     start_run("pendulum")
-    Path("spec.md").write_text("a pendulum\n")
+    Path(".textc/specs/pendulum.md").write_text("a pendulum\n")
     compile_run(claude_cmd_override=FAKE + ["--scenario", "done_simple"])
 
 

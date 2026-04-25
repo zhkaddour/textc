@@ -2,23 +2,28 @@ from textc import prompts
 
 
 def test_compile_system_prompt_is_string():
-    p = prompts.compile_system_prompt()
+    p = prompts.compile_system_prompt(spec_path=".textc/specs/pendulum.md")
     assert isinstance(p, str)
     assert "STATUS: DONE" in p
-    assert "Do not modify spec.md" in p
+    assert "Do not modify .textc/specs/pendulum.md" in p
     assert "Do not commit" in p
 
 
 def test_compile_user_prompt_includes_diff():
-    p = prompts.compile_user_prompt(spec_diff="+ hello world")
+    p = prompts.compile_user_prompt(
+        spec_diff="+ hello world", spec_path=".textc/specs/pendulum.md"
+    )
     assert "+ hello world" in p
+    assert ".textc/specs/pendulum.md" in p
     assert "STATUS: DONE" in p
 
 
 def test_sculpt_system_prompt_includes_note():
-    p = prompts.sculpt_system_prompt(note="use scipy not numpy")
+    p = prompts.sculpt_system_prompt(
+        note="use scipy not numpy", spec_path=".textc/specs/pendulum.md"
+    )
     assert "use scipy not numpy" in p
-    assert "spec.md" in p
+    assert ".textc/specs/pendulum.md" in p
     assert "lie" in p.lower()
     assert "STATUS: DONE" in p
 

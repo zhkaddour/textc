@@ -4,7 +4,6 @@ Task 3.1 implements case 2 + case 11 + case 13.
 Task 3.2 will fill in the case 3 (anchor) branch.
 """
 from datetime import datetime, timezone
-from pathlib import Path
 
 from textc import agent, git_ops, prompts, session
 from textc.errors import (
@@ -17,11 +16,16 @@ def run(claude_cmd_override: list[str] | None = None) -> None:
         raise NotInGitRepoError("Not in a git repository.")
 
     branch = git_ops.current_branch()
-    spec_modified = git_ops.is_modified("spec.md")
+    spec = str(session.spec_path(branch))
+    spec_modified = git_ops.is_modified(spec)
 
-    if git_ops.working_tree_dirty(exclude=["spec.md"]):
+    # Exclude `.textc/` because session JSON updates from `textc ask` are
+    # textc-owned audit state, not user code; they get baked into the next
+    # compile/sculpt commit via `git add .` below. The spec file lives under
+    # `.textc/specs/` and is therefore covered by the same exclusion.
+    if git_ops.working_tree_dirty(exclude=[".textc"]):
         raise DirtyWorkingTreeError(
-            "Working tree has uncommitted changes besides spec.md. "
+            "Working tree has uncommitted changes besides the spec file. "
             "Commit or stash first."
         )
 
@@ -35,11 +39,11 @@ def run(claude_cmd_override: list[str] | None = None) -> None:
         return
 
     # Case 2: normal compile.
-    spec_diff = git_ops.diff_against_head("spec.md")
+    spec_diff = git_ops.diff_against_head(spec)
 
     result = agent.dispatch(
-        system_prompt=prompts.compile_system_prompt(),
-        user_prompt=prompts.compile_user_prompt(spec_diff=spec_diff),
+        system_prompt=prompts.compile_system_prompt(spec_path=spec),
+        user_prompt=prompts.compile_user_prompt(spec_diff=spec_diff, spec_path=spec),
         claude_cmd=claude_cmd_override,
         stream_to_terminal=True,
     )
@@ -69,6 +73,6 @@ def run(claude_cmd_override: list[str] | None = None) -> None:
         "transcript": result.events,
     }, branch, index)
 
-    git_ops.add(["spec.md", str(session.session_path(branch, index)), "."])
+    git_ops.add([spec, str(session.session_path(branch, index)), "."])
     message = f"[textc] {result.subject}\n\nCompiled: {compiled_at}"
     git_ops.commit(message)

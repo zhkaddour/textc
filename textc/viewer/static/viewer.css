@@ -1,0 +1,344 @@
+:root {
+  --bg: #0e0e10;
+  --panel: #1a1a1d;
+  --panel-2: #2a2a30;
+  --border: #2a2a30;
+  --text: #cde;
+  --text-dim: #888;
+  --text-faint: #666;
+  --accent: #fc6;
+  --commit: #6cf;
+  --added-bg: rgba(80, 200, 130, 0.12);
+  --added-border: #4c8;
+  --added-text: #9ec;
+  --removed-bg: rgba(220, 80, 80, 0.12);
+  --removed-border: #c66;
+  --removed-text: #f88;
+  --sculpt: #aa8;
+  --font-mono: 'SF Mono', 'JetBrains Mono', 'Menlo', 'Consolas', monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: #050507;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  overflow: hidden;
+}
+
+.app {
+  display: flex;
+  height: 100vh;
+  gap: 5px;
+  padding: 5px;
+  background: var(--bg);
+}
+
+/* branches rail */
+.branches {
+  flex: 0 0 100px;
+  background: var(--panel);
+  border-radius: 5px;
+  padding: 10px 8px;
+}
+.rail-label {
+  font-size: 9px;
+  color: var(--text-faint);
+  letter-spacing: 0.5px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.branches ul { list-style: none; padding: 0; margin: 0; }
+.branches li {
+  padding: 4px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  color: var(--text-dim);
+  cursor: pointer;
+  margin-bottom: 2px;
+}
+.branches li.current {
+  background: var(--panel-2);
+  color: var(--text);
+}
+.branches li:hover:not(.current) { background: rgba(255,255,255,0.02); }
+
+/* panels (shared) */
+.panel {
+  background: var(--panel);
+  border-radius: 5px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+.panel-header {
+  padding: 10px 12px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-faint);
+  letter-spacing: 0.5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+}
+.panel-sub { font-weight: 400; color: var(--text-dim); }
+.panel-body {
+  flex: 1;
+  overflow: auto;
+  padding: 12px;
+}
+
+.spec-panel { flex: 1; }
+.code-panel { flex: 1; }
+
+/* spec rendering */
+.spec-line {
+  padding: 1px 8px;
+  border-left: 2px solid transparent;
+  white-space: pre-wrap;
+  font-family: inherit;
+}
+.spec-line.added {
+  background: var(--added-bg);
+  border-left-color: var(--added-border);
+  color: var(--added-text);
+}
+.spec-line.removed {
+  background: var(--removed-bg);
+  border-left-color: var(--removed-border);
+  color: var(--removed-text);
+  text-decoration: line-through;
+}
+.spec-line.heading-1 { font-size: 18px; font-weight: 700; color: #eef; padding-top: 10px; }
+.spec-line.heading-2 { font-size: 15px; font-weight: 700; color: #ddf; padding-top: 8px; }
+.spec-line.heading-3 { font-size: 13px; font-weight: 700; color: #ccf; padding-top: 6px; }
+.spec-line.blank { height: 8px; }
+
+/* code diff rendering */
+.code-file { margin-bottom: 16px; }
+.code-file-header {
+  font-size: 11px;
+  color: var(--text-dim);
+  padding: 4px 0 6px;
+  font-weight: 700;
+}
+.code-hunk-header {
+  font-size: 10px;
+  color: var(--text-faint);
+  background: rgba(255,255,255,0.02);
+  padding: 2px 6px;
+  margin: 4px 0;
+}
+.code-line {
+  font-size: 11px;
+  white-space: pre;
+  padding: 0 6px;
+  font-family: inherit;
+}
+.code-line.added { background: var(--added-bg); color: var(--added-text); }
+.code-line.removed { background: var(--removed-bg); color: var(--removed-text); }
+.code-line.context { color: var(--text-faint); }
+
+/* right column */
+.right-column {
+  flex: 0 0 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+.commits-panel { flex: 0 0 280px; }
+.detail-panel { flex: 1; }
+
+.commit-list {
+  list-style: none;
+  padding: 4px 0;
+  margin: 0;
+}
+.commit-row {
+  position: relative;
+  padding: 6px 10px 6px 28px;
+  cursor: pointer;
+  border-radius: 3px;
+  margin: 0 6px 4px;
+}
+.commit-row:hover { background: rgba(255,255,255,0.02); }
+.commit-row.selected { background: var(--panel-2); }
+.commit-row .dot {
+  position: absolute;
+  left: 11px;
+  top: 12px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--commit);
+}
+.commit-row.selected .dot {
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+  width: 12px;
+  height: 12px;
+  left: 10px;
+  top: 11px;
+}
+.commit-row .sub-dots {
+  position: absolute;
+  left: 1px;
+  top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.commit-row .sub-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--sculpt);
+}
+.commit-row .subject { font-size: 11px; color: var(--text); }
+.commit-row.selected .subject { color: var(--accent); }
+.commit-row .meta { font-size: 9px; color: var(--text-dim); margin-top: 1px; }
+
+.commit-row.new-pulse {
+  animation: pulse 0.7s ease-out;
+}
+@keyframes pulse {
+  0% { background: var(--accent); }
+  100% { background: var(--panel-2); }
+}
+
+/* tabs in detail panel */
+.tabs {
+  display: flex;
+  background: rgba(0,0,0,0.3);
+  margin: 8px 8px 0;
+  border-radius: 4px;
+  padding: 2px;
+}
+.tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-faint);
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 5px;
+  border-radius: 3px;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+}
+.tab.active {
+  background: var(--panel-2);
+  color: var(--text);
+}
+
+/* commit message body */
+.commit-meta-block { font-size: 11px; }
+.commit-meta-subject { color: var(--accent); font-weight: 700; margin-bottom: 4px; }
+.commit-meta-time { color: var(--text-dim); font-size: 10px; margin-bottom: 8px; }
+.commit-meta-sculpt { color: var(--sculpt); font-size: 10px; margin-bottom: 2px; }
+.commit-meta-extra {
+  color: var(--text-faint);
+  font-size: 10px;
+  border-top: 1px solid var(--border);
+  padding-top: 6px;
+  margin-top: 6px;
+}
+
+/* conversation rendering */
+.conv-event { margin-bottom: 8px; padding: 6px 8px; border-radius: 4px; font-size: 11px; }
+.conv-assistant_text { background: rgba(255,255,255,0.02); color: var(--text); white-space: pre-wrap; }
+.conv-tool_use { color: var(--text-dim); font-size: 10px; }
+.conv-tool_use::before { content: "→ "; color: var(--text-faint); }
+.conv-tool_result { color: var(--text-faint); font-size: 10px; cursor: pointer; }
+.conv-tool_result::before { content: "← "; }
+.conv-tool_result .full { display: none; white-space: pre-wrap; margin-top: 4px; padding-left: 12px; }
+.conv-tool_result.expanded .full { display: block; }
+.conv-sculpt {
+  background: rgba(170, 136, 0, 0.08);
+  border-left: 2px solid var(--sculpt);
+  color: #e8d090;
+  font-size: 11px;
+  padding: 8px 10px;
+  white-space: pre-wrap;
+}
+.conv-sculpt::before {
+  content: "✎ sculpt request\A";
+  color: var(--sculpt);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  display: block;
+  margin-bottom: 4px;
+  white-space: pre;
+}
+.conv-sculpt .at { display: block; color: var(--text-faint); font-size: 9px; margin-top: 4px; }
+
+.conv-ask {
+  background: rgba(255, 220, 120, 0.06);
+  border-left: 2px solid var(--accent);
+  padding: 8px 10px;
+  font-size: 11px;
+}
+.conv-ask::before {
+  content: "? ask\A";
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  display: block;
+  margin-bottom: 6px;
+  white-space: pre;
+}
+.conv-ask .question { color: var(--accent); font-size: 11px; margin-bottom: 6px; white-space: pre-wrap; }
+.conv-ask .answer { color: var(--text); font-size: 11px; white-space: pre-wrap; }
+.conv-ask .at { display: block; color: var(--text-faint); font-size: 9px; margin-top: 6px; }
+
+.conv-system_init {
+  background: rgba(120, 160, 220, 0.06);
+  border-left: 2px solid #6cf;
+  color: var(--text-dim);
+  font-size: 10px;
+  white-space: pre-wrap;
+  font-family: inherit;
+}
+.conv-system_init::before { content: "⚙ session: "; color: #6cf; font-weight: 700; }
+
+.conv-thinking {
+  background: rgba(255, 220, 120, 0.04);
+  border-left: 2px solid var(--accent);
+  color: #cab78a;
+  font-size: 10px;
+  font-style: italic;
+  white-space: pre-wrap;
+  padding: 6px 10px;
+}
+.conv-thinking::before { content: "↳ thinking\A"; color: var(--accent); font-weight: 700; font-style: normal; white-space: pre; }
+
+.conv-compile_input {
+  background: rgba(80, 200, 130, 0.06);
+  border-left: 2px solid var(--added-border);
+  color: var(--added-text);
+  font-size: 10px;
+  white-space: pre;
+  overflow-x: auto;
+  padding: 8px 10px;
+  margin-bottom: 12px;
+}
+.conv-compile_input::before { content: "▸ compile input (spec diff)\A"; color: var(--added-border); font-weight: 700; display: block; margin-bottom: 4px; white-space: pre; }
+
+.empty {
+  color: var(--text-faint);
+  font-style: italic;
+  text-align: center;
+  padding: 20px;
+  font-size: 11px;
+}

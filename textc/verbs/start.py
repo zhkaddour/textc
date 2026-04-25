@@ -1,7 +1,7 @@
 """Implements `textc start <name>` — case 1 of behavior matrix."""
 from pathlib import Path
 
-from textc import git_ops
+from textc import git_ops, session
 from textc.errors import NotInGitRepoError
 
 _GITIGNORE_LINE = ".textc/sessions/*.failed.json"
@@ -30,10 +30,11 @@ def run(name: str) -> None:
 
     git_ops.create_branch(name)
 
-    spec = Path("spec.md")
+    spec = session.spec_path(name)
+    spec.parent.mkdir(parents=True, exist_ok=True)
     spec.write_text("")
 
     _ensure_gitignore_excludes_failed_sessions()
 
-    git_ops.add(["spec.md", ".gitignore"])
+    git_ops.add([str(spec), ".gitignore"])
     git_ops.commit(f"[textc] start {name}")

@@ -1,4 +1,10 @@
-"""Implements `textc ask <question>` — cases 6, 7 of behavior matrix."""
+"""Implements `textc ask <question>` — cases 6, 7 of behavior matrix.
+
+Ask amends HEAD with the updated session JSON so the Q&A audit lives inside
+the compile cycle it belongs to (rather than getting bundled into the next
+compile's commit). Subject and body are preserved — only the session JSON
+content changes.
+"""
 from datetime import datetime, timezone
 
 from textc import agent, git_ops, prompts, session
@@ -43,3 +49,9 @@ def run(question: str, claude_cmd_override: list[str] | None = None) -> None:
         branch, prev_index,
         question=question, answer=result.final_text, at=answered_at,
     )
+
+    # Amend HEAD with the updated session JSON. Subject + body unchanged —
+    # asks aren't code changes worth a `Sculpted:`-style body line. The audit
+    # lives in the JSON, which travels in git history.
+    git_ops.add([str(session.session_path(branch, prev_index))])
+    git_ops.amend()

@@ -11,7 +11,7 @@ def test_show_default_prints_latest_session(git_repo: Path, capsys):
     from textc.verbs.compile import run as compile_run
 
     start_run("pendulum")
-    Path("spec.md").write_text("a pendulum\n")
+    Path(".textc/specs/pendulum.md").write_text("a pendulum\n")
     compile_run(claude_cmd_override=FAKE + ["--scenario", "done_simple"])
 
     show_run(None)
@@ -25,9 +25,9 @@ def test_show_specific_index(git_repo: Path, capsys):
     from textc.verbs.compile import run as compile_run
 
     start_run("pendulum")
-    Path("spec.md").write_text("a\n")
+    Path(".textc/specs/pendulum.md").write_text("a\n")
     compile_run(claude_cmd_override=FAKE + ["--scenario", "done_simple"])
-    Path("spec.md").write_text("a\nb\n")
+    Path(".textc/specs/pendulum.md").write_text("a\nb\n")
     compile_run(claude_cmd_override=FAKE + ["--scenario", "done_simple"])
 
     show_run(1)

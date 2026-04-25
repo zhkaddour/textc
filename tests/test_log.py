@@ -13,7 +13,7 @@ def test_log_renders_compile_and_sculpts(git_repo: Path, capsys):
     from textc.verbs.sculpt import run as sculpt_run
 
     start_run("pendulum")
-    Path("spec.md").write_text("a pendulum\n")
+    Path(".textc/specs/pendulum.md").write_text("a pendulum\n")
     compile_run(claude_cmd_override=FAKE + ["--scenario", "done_simple"])
     sculpt_run("use scipy", claude_cmd_override=FAKE + ["--scenario", "done_simple"])
 

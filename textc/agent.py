@@ -68,7 +68,13 @@ def dispatch(
     # not the fake_claude.py stub used by tests. The stub doesn't need them.
     # Detect by checking if "claude" is the binary basename.
     if cmd and os.path.basename(cmd[0]) in ("claude",):
-        args.extend(["--print", "--output-format", "stream-json"])
+        # `--verbose` is REQUIRED when combining --print + --output-format stream-json.
+        # `--permission-mode bypassPermissions` lets the agent write code and run tests
+        # without interactive prompts (which can't be answered in --print mode anyway).
+        # Safe because the agent operates inside a feature branch — anything it does
+        # is reversible via git.
+        args.extend(["--print", "--output-format", "stream-json", "--verbose"])
+        args.extend(["--permission-mode", "bypassPermissions"])
         args.extend(["--append-system-prompt", system_prompt])
         if resume_session_id:
             args.extend(["--resume", resume_session_id])
@@ -155,15 +161,60 @@ def dispatch(
     )
 
 
+_USE_COLOR = sys.stdout.isatty()
+
+
+def _ansi(text: str, code: str) -> str:
+    return f"\033[{code}m{text}\033[0m" if _USE_COLOR else text
+
+
+def _summarize_tool_call(name: str, inp: dict[str, Any]) -> str:
+    """One-line summary of a tool call's target — what it acts on, not how."""
+    if name in ("Read", "Edit", "Write", "NotebookEdit"):
+        return str(inp.get("file_path", ""))
+    if name == "Bash":
+        cmd = str(inp.get("command", ""))
+        return cmd if len(cmd) <= 80 else cmd[:77] + "..."
+    if name in ("Glob", "Grep"):
+        return str(inp.get("pattern", ""))
+    return ""
+
+
 def _render_event(event: dict[str, Any]) -> None:
-    """Render a stream-json event to stdout for the user. Best-effort, terse."""
+    """Render a stream-json event to stdout. Streams assistant text and
+    surfaces tool activity so the user sees what the agent is doing in near
+    real time, mirroring Claude Code's interactive feel."""
     etype = event.get("type")
     if etype == "assistant":
         msg = event.get("message", {})
         for c in msg.get("content", []):
-            if c.get("type") == "text":
+            ctype = c.get("type")
+            if ctype == "text":
                 sys.stdout.write(c.get("text", ""))
                 sys.stdout.flush()
+            elif ctype == "tool_use":
+                name = c.get("name", "?")
+                summary = _summarize_tool_call(name, c.get("input", {}) or {})
+                sys.stdout.write(
+                    f"\n{_ansi('→', '36')} {_ansi(name, '36;1')} "
+                    f"{_ansi(summary, '2')}\n"
+                )
+                sys.stdout.flush()
+            elif ctype == "thinking":
+                sys.stdout.write(_ansi("\n  ... thinking\n", "2"))
+                sys.stdout.flush()
+    elif etype == "user":
+        # Tool results come back as user messages with content blocks.
+        msg = event.get("message", {})
+        content = msg.get("content")
+        if isinstance(content, list):
+            for c in content:
+                if c.get("type") == "tool_result":
+                    if c.get("is_error"):
+                        sys.stdout.write(_ansi("  ✗\n", "31"))
+                    else:
+                        sys.stdout.write(_ansi("  ✓\n", "32"))
+                    sys.stdout.flush()
     elif etype == "result":
         sys.stdout.write("\n")
         sys.stdout.flush()

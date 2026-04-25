@@ -34,7 +34,9 @@ def run(note: str, claude_cmd_override: list[str] | None = None) -> None:
 
     branch = git_ops.current_branch()
 
-    if git_ops.working_tree_dirty():
+    # Exclude `.textc/` because session JSON updates from `textc ask` are
+    # textc-owned state; they'll be baked into the amended commit naturally.
+    if git_ops.working_tree_dirty(exclude=[".textc"]):
         raise DirtyWorkingTreeError(
             "Working tree dirty. Commit or stash first."
         )
@@ -46,13 +48,14 @@ def run(note: str, claude_cmd_override: list[str] | None = None) -> None:
         )
 
     has_session = session.exists(branch, prev_index)
+    spec = str(session.spec_path(branch))
 
     if has_session:
         # Case 4 — resume existing session.
         data = session.read(branch, prev_index)
         cc_session_id = data["metadata"]["cc_session_id"]
         result = agent.dispatch(
-            system_prompt=prompts.sculpt_system_prompt(note=note),
+            system_prompt=prompts.sculpt_system_prompt(note=note, spec_path=spec),
             user_prompt=note,
             resume_session_id=cc_session_id,
             claude_cmd=claude_cmd_override,
@@ -61,7 +64,7 @@ def run(note: str, claude_cmd_override: list[str] | None = None) -> None:
     else:
         # Case 5 — anchor with no prior session. Fresh dispatch.
         result = agent.dispatch(
-            system_prompt=prompts.sculpt_system_prompt(note=note),
+            system_prompt=prompts.sculpt_system_prompt(note=note, spec_path=spec),
             user_prompt=note,
             claude_cmd=claude_cmd_override,
             stream_to_terminal=True,

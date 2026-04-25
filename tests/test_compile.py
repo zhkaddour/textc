@@ -17,7 +17,7 @@ def _start_branch(name: str = "pendulum"):
 
 def test_compile_with_spec_diff_creates_commit(git_repo: Path, monkeypatch):
     _start_branch()
-    Path("spec.md").write_text("Build a pendulum.\n")
+    Path(".textc/specs/pendulum.md").write_text("Build a pendulum.\n")
     monkeypatch.setenv("TEXTC_TIMEOUT", "10")
 
     compile_run(claude_cmd_override=FAKE + ["--scenario", "done_simple"])
@@ -88,7 +88,7 @@ def test_compile_anchor_then_anchor_again(git_repo: Path):
 
 def test_compile_agent_failed_writes_forensic_json_no_commit(git_repo: Path):
     _start_branch()
-    Path("spec.md").write_text("broken spec\n")
+    Path(".textc/specs/pendulum.md").write_text("broken spec\n")
 
     head_before = subprocess.run(
         ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True,
@@ -117,7 +117,7 @@ def test_compile_agent_failed_writes_forensic_json_no_commit(git_repo: Path):
 
 def test_compile_timeout_writes_forensic_json(git_repo: Path, monkeypatch):
     _start_branch()
-    Path("spec.md").write_text("hangs forever\n")
+    Path(".textc/specs/pendulum.md").write_text("hangs forever\n")
     monkeypatch.setenv("TEXTC_TIMEOUT", "1")
 
     from textc.errors import AgentFailureError
@@ -126,3 +126,38 @@ def test_compile_timeout_writes_forensic_json(git_repo: Path, monkeypatch):
 
     failed = Path(".textc/sessions/pendulum-1.failed.json")
     assert failed.exists()
+
+
+def test_compile_after_ask_lands_cleanly(git_repo: Path):
+    """`textc ask` amends HEAD with the updated session JSON, so the working
+    tree is clean afterward. The next compile sees a clean tree and proceeds
+    without bundling stale state."""
+    from textc.verbs.ask import run as ask_run
+    _start_branch()
+    Path(".textc/specs/pendulum.md").write_text("first\n")
+    compile_run(claude_cmd_override=FAKE + ["--scenario", "done_simple"])
+    ask_run("why this approach?",
+            claude_cmd_override=FAKE + ["--scenario", "done_simple"])
+
+    # After ask, working tree is clean — audit was baked into HEAD.
+    porcelain = subprocess.run(
+        ["git", "status", "--porcelain"],
+        capture_output=True, text=True, check=True,
+    ).stdout
+    assert porcelain == ""
+
+    # Next compile proceeds normally.
+    Path(".textc/specs/pendulum.md").write_text("first\nsecond\n")
+    compile_run(claude_cmd_override=FAKE + ["--scenario", "done_simple"])
+
+    head_subject = subprocess.run(
+        ["git", "log", "-n1", "--format=%s"],
+        capture_output=True, text=True, check=True,
+    ).stdout.strip()
+    assert head_subject == "[textc] add pendulum gravity"
+
+    # Two distinct session JSONs: pendulum-1 (with the ask Q&A) and pendulum-2.
+    data1 = json.loads(Path(".textc/sessions/pendulum-1.json").read_text())
+    assert any(a["question"] == "why this approach?"
+               for a in data1["metadata"].get("asks", []))
+    assert Path(".textc/sessions/pendulum-2.json").exists()

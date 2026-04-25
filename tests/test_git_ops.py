@@ -43,6 +43,16 @@ def test_working_tree_dirty_excluding(git_repo: Path):
     assert git_ops.working_tree_dirty(exclude=["spec.md"]) is True
 
 
+def test_working_tree_dirty_excluding_directory_prefix(git_repo: Path):
+    """Directory exclusion: `.textc` should match `.textc/sessions/foo.json`."""
+    Path(".textc/sessions").mkdir(parents=True)
+    Path(".textc/sessions/test-1.json").write_text("{}")
+    assert git_ops.working_tree_dirty(exclude=[".textc"]) is False
+    assert git_ops.working_tree_dirty(exclude=[".textc/"]) is False  # trailing slash ok
+    Path("other.py").write_text("hi")
+    assert git_ops.working_tree_dirty(exclude=[".textc"]) is True  # other.py still triggers
+
+
 def test_diff_against_head(git_repo: Path):
     Path("spec.md").write_text("hello\n")
     diff = git_ops.diff_against_head("spec.md")

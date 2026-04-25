@@ -49,16 +49,18 @@ def is_modified(path: str) -> bool:
 def working_tree_dirty(exclude: list[str] | None = None) -> bool:
     """True iff any tracked or untracked file (excluding `exclude`) differs from HEAD.
 
-    `exclude` is a list of paths to ignore (e.g. ['spec.md']).
+    `exclude` may contain file paths (exact match) or directory paths (prefix
+    match) — e.g. `['.textc']` skips anything under `.textc/`.
     """
     exclude = exclude or []
     result = _git("status", "--porcelain")
     for line in result.stdout.splitlines():
         path = line[3:].strip()
-        if path in exclude:
+        if not path:
             continue
-        if path:
-            return True
+        if any(path == p or path.startswith(p.rstrip("/") + "/") for p in exclude):
+            continue
+        return True
     return False
 
 

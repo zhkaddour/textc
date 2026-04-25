@@ -23,6 +23,8 @@ def run() -> None:
             if not line.startswith("Sculpted: "):
                 continue
             note = line[len("Sculpted: "):]
-            symbol = "±" if "spec.md" in c["files"] else "~"
+            symbol = "±" if any(
+                f.startswith(".textc/specs/") for f in c["files"]
+            ) else "~"
             node.add(f"[yellow]{symbol}[/] {note}")
     console.print(tree)

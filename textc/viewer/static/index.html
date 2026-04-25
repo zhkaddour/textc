@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>textc viewer</title>
+  <link rel="stylesheet" href="/static/viewer.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="branches" id="branches">
+      <div class="rail-label">BRANCHES</div>
+      <ul id="branch-list"></ul>
+    </aside>
+
+    <section class="panel spec-panel">
+      <header class="panel-header">
+        <span>spec.md</span>
+        <span class="panel-sub" id="spec-meta"></span>
+      </header>
+      <div class="panel-body" id="spec-body"></div>
+    </section>
+
+    <section class="panel code-panel">
+      <header class="panel-header">
+        <span>code diff</span>
+        <span class="panel-sub" id="code-meta"></span>
+      </header>
+      <div class="panel-body" id="code-body"></div>
+    </section>
+
+    <aside class="right-column">
+      <section class="panel commits-panel">
+        <header class="panel-header">
+          <span id="branch-name">—</span>
+          <span class="panel-sub">
+            <label class="auto-jump">
+              <input type="checkbox" id="auto-jump" checked> auto-jump
+            </label>
+          </span>
+        </header>
+        <ul id="commit-list" class="commit-list"></ul>
+      </section>
+
+      <section class="panel detail-panel">
+        <div class="tabs">
+          <button class="tab active" data-tab="commit" id="tab-commit">COMMIT</button>
+          <button class="tab" data-tab="conversation" id="tab-conversation">CONVERSATION</button>
+        </div>
+        <div class="panel-body" id="detail-body"></div>
+      </section>
+    </aside>
+  </div>
+  <script src="/static/viewer.js"></script>
+</body>
+</html>

@@ -1,6 +1,6 @@
-"""Session JSON read/write and index bookkeeping.
+"""Session JSON read/write, spec path layout, and index bookkeeping.
 
-Only module that touches `.textc/sessions/`. JSON shape per addendum §1.2.
+Owns all `.textc/` storage paths (specs and sessions). JSON shape per addendum §1.2.
 """
 from __future__ import annotations
 
@@ -11,6 +11,16 @@ from typing import Any
 from textc import git_ops
 
 SESSIONS_DIR = Path(".textc/sessions")
+SPECS_DIR = Path(".textc/specs")
+
+
+def spec_path(branch: str) -> Path:
+    """Path to the spec file for a branch.
+
+    Branch names with slashes (e.g. `feature/auth`) become nested directories
+    (`.textc/specs/feature/auth.md`), mirroring git's own ref layout.
+    """
+    return SPECS_DIR / f"{branch}.md"
 
 
 def session_path(branch: str, index: int) -> Path:
